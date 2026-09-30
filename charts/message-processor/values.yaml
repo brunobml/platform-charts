@@ -1,0 +1,10 @@
+# Default values for message-processor Golden Path Chart.
+# Developers provide overrides via their environment values file (values-dev.yaml, etc.)
+
+name: orders
+environment: dev
+replicas: 1
+retentionPeriod: "86400"
+
+# Application container image (Required: supplied by the developer's values file)
+image: ""
