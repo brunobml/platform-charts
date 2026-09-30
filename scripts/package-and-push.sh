@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-CHART_NAME="${1:-message-processor}"
+CHART_NAME="${1:-queue-backed-service}"
 REGISTRY_URL="${REGISTRY_URL:-oci://ghcr.io/brunobml/charts}"
 DIST_DIR="${REPO_ROOT}/dist"
 

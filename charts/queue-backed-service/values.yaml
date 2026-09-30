@@ -1,0 +1,5 @@
+name: orders
+environment: dev
+replicas: 1
+retentionPeriod: "86400"
+image: ""

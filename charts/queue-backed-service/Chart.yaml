@@ -1,0 +1,9 @@
+apiVersion: v2
+name: queue-backed-service
+description: Enterprise Golden Path Helm Chart for Queue-Backed Microservices (Kro + ACK)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Platform Engineering Team
+    email: platform-team@enterprise.local
