@@ -1,0 +1,56 @@
+name: Release Charts to GHCR
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'charts/**'
+      - '.github/workflows/release.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Helm Registry Login
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Lint Helm Charts
+        run: |
+          for chart in charts/*; do
+            if [ -d "$chart" ] && [ -f "$chart/Chart.yaml" ]; then
+              echo "Linting $chart..."
+              helm lint "$chart" --set image=placeholder:latest
+            fi
+          done
+
+      - name: Package and Push Charts to GHCR
+        run: |
+          mkdir -p dist
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          for chart in charts/*; do
+            if [ -d "$chart" ] && [ -f "$chart/Chart.yaml" ]; then
+              chart_name=$(basename "$chart")
+              echo "Packaging $chart_name..."
+              helm package "$chart" -d dist/
+            fi
+          done
+          for pkg in dist/*.tgz; do
+            if [ -f "$pkg" ]; then
+              echo "Pushing $pkg to oci://ghcr.io/${OWNER}/charts..."
+              helm push "$pkg" "oci://ghcr.io/${OWNER}/charts"
+            fi
+          done
