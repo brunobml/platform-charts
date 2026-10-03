@@ -1,0 +1,9 @@
+# CODEOWNERS for platform-charts
+# Golden Helm charts require platform owner review and approval
+
+# Global repository owner
+* @brunobml
+
+# Golden chart definitions and packaging scripts
+/charts/ @brunobml
+/scripts/ @brunobml
