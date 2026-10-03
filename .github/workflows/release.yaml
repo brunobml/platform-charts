@@ -51,8 +51,14 @@ jobs:
 
           for chart in charts/*; do
             if [ -d "$chart" ] && [ -f "$chart/Chart.yaml" ]; then
-              chart_name=$(grep -E '^name:' "$chart/Chart.yaml" | awk '{print $2}' | tr -d '"'\'')
-              chart_version=$(grep -E '^version:' "$chart/Chart.yaml" | awk '{print $2}' | tr -d '"'\'')
+              # Name and version from Helm's own normalized view of Chart.yaml (no quote handling needed).
+              # (validation-01 V-1: the previous tr -d quoting was a bash syntax error.)
+              chart_name=$(helm show chart "$chart" | awk '/^name:/ {print $2; exit}')
+              chart_version=$(helm show chart "$chart" | awk '/^version:/ {print $2; exit}')
+              if [ -z "$chart_name" ] || [ -z "$chart_version" ]; then
+                echo "::error::Cannot read name/version from ${chart}/Chart.yaml"
+                exit 1
+              fi
               echo "=================================================="
               echo "Processing chart: ${chart_name} (version ${chart_version})"
               echo "=================================================="
@@ -61,9 +67,15 @@ jobs:
               helm package "$chart" -d dist/
               pkg_file="dist/${chart_name}-${chart_version}.tgz"
 
-              # Check if the chart version already exists in GHCR
+              # Does this version already exist in GHCR? Only an explicit "not found" means "new version";
+              # any other error (outage, auth, rate limit, network) fails the job instead of pushing
+              # (validation-01 V-2: the guard must fail closed).
               tmp_remote=$(mktemp -d)
-              if helm pull "oci://ghcr.io/${OWNER}/charts/${chart_name}" --version "${chart_version}" -d "${tmp_remote}" 2>/dev/null; then
+              set +e
+              pull_err=$(helm pull "oci://ghcr.io/${OWNER}/charts/${chart_name}" --version "${chart_version}" -d "${tmp_remote}" 2>&1 >/dev/null)
+              pull_rc=$?
+              set -e
+              if [ "${pull_rc}" -eq 0 ]; then
                 echo "Chart ${chart_name}:${chart_version} already exists in GHCR. Verifying content immutability..."
 
                 tmp_local_ext=$(mktemp -d)
@@ -81,10 +93,15 @@ jobs:
 
                 echo "Packaged chart is identical to released version. Skipping push."
                 rm -rf "${tmp_remote}" "${tmp_local_ext}" "${tmp_remote_ext}"
-              else
+              elif echo "${pull_err}" | grep -q ": not found"; then
                 echo "Chart ${chart_name}:${chart_version} is a new version. Pushing to oci://ghcr.io/${OWNER}/charts..."
                 helm push "${pkg_file}" "oci://ghcr.io/${OWNER}/charts"
                 rm -rf "${tmp_remote}"
+              else
+                echo "::error::Cannot determine whether ${chart_name}:${chart_version} exists in GHCR (helm pull rc=${pull_rc}): ${pull_err}"
+                echo "::error::Refusing to push (fail closed) - a transient error must never overwrite a released version."
+                rm -rf "${tmp_remote}"
+                exit 1
               fi
             fi
           done
