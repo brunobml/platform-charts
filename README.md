@@ -10,7 +10,7 @@ The golden Helm charts of the lab, owned by the platform team. Application teams
 
 | Chart | Version | Renders | Consumed by |
 | :--- | :--- | :--- | :--- |
-| **`queue-backed-service`** | `1.0.0` | One kro `QueueBackedService` instance: worker and API Deployments, SQS queue and DLQ (ACK), DynamoDB table, Service and Ingress | the `tenant-workloads` ApplicationSet in `gitops-control-plane` |
+| **`queue-backed-service`** | `1.0.0` | One kro `QueueBackedService` instance, which kro expands into: SQS queue and DLQ (ACK), worker Deployment (with the web dashboard), Service, Ingress, PDB, NetworkPolicies. The app creates its DynamoDB table itself | the `tenant-workloads` ApplicationSet in `gitops-control-plane` |
 
 The chart only fills the instance. The resource graph itself is the `QueueBackedService` ResourceGraphDefinition in `platform-catalog/blueprints/`. That definition is guarded by the admission policy `queuebackedservice-contract`.
 
@@ -20,7 +20,7 @@ Values (see `charts/queue-backed-service/values.yaml`): `name`, `environment` (`
 
 ## 🚀 Releasing (OCI on GHCR, immutable versions)
 
-Charts are published to `oci://ghcr.io/brunobml/charts` by the **release workflow** (`.github/workflows/release.yaml`) on every push to `main`. **A released version is never overwritten:**
+Charts are published to `oci://ghcr.io/brunobml/charts` by the **release workflow** (`.github/workflows/release.yaml`) on every push to `main` that changes `charts/` or the workflow. **A released version is never overwritten:**
 
 | Situation | Workflow result |
 |---|---|
