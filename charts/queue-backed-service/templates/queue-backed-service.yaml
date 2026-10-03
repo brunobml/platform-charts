@@ -14,4 +14,3 @@ spec:
   replicas: {{ .Values.replicas | default 1 }}
   messageRetentionPeriod: {{ .Values.retentionPeriod | default "86400" | quote }}
   image: {{ required "A container image must be specified in .Values.image" .Values.image }}
-{{- /* guard negative test (validation-01 Y3); rendered output unchanged */ -}}
