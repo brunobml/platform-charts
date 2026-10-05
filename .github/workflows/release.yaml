@@ -110,7 +110,8 @@ jobs:
                 echo "Chart ${chart_name}:${chart_version} is a new version. Pushing to oci://ghcr.io/${OWNER}/charts..."
                 helm push "${pkg_file}" "oci://ghcr.io/${OWNER}/charts"
                 rm -rf "${tmp_remote}"
-              elif echo "${pull_err}" | grep -q "403: denied" && [ "${token_code}" = "403" ]; then
+              elif echo "${pull_err}" | grep -Eq "403 Forbidden|403: denied" && [ "${token_code}" = "403" ]; then
+                # Helm 3.14 (this workflow) reports "403 Forbidden" from the token endpoint; newer Helm "403: denied"
                 echo "Chart ${chart_name} does not exist in GHCR yet (anonymous token denied). First release of ${chart_version}: pushing..."
                 helm push "${pkg_file}" "oci://ghcr.io/${OWNER}/charts"
                 echo "::notice::New package ${OWNER}/charts/${chart_name}: make it PUBLIC in the package settings (Argo CD pulls anonymously)."
