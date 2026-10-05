@@ -1,0 +1,12 @@
+# One team cluster request (tenant-iac claim file). Every key except network is required;
+# the allowed values are enforced by the admission policy teamekscluster-contract on the spoke.
+team: ""                 # 2-20 chars; must match the namespace iac-<team>-<env>
+name: ""                 # 2-20 chars; AWS names are <team>-<name>-<env>
+env: ""                  # dev | test | prod
+kubernetesVersion: ""    # 1.32 | 1.33 | 1.34
+network: platform-default
+nodeGroup:
+  instanceType: ""       # t3.medium | t3.large | m5.large
+  minSize: 1
+  desiredSize: 1
+  maxSize: 1             # <= 3 (dev/test), <= 5 (prod)

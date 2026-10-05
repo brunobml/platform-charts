@@ -12,7 +12,11 @@ lint:
 	@for chart in charts/*; do \
 		if [ -d "$$chart" ]; then \
 			echo "==> Linting $$chart..."; \
-			helm lint "$$chart" --set image=placeholder:latest; \
+			if ls "$$chart"/ci/*-values.yaml >/dev/null 2>&1; then \
+				for v in "$$chart"/ci/*-values.yaml; do helm lint "$$chart" -f "$$v" || exit 1; done; \
+			else \
+				helm lint "$$chart" --set image=placeholder:latest; \
+			fi; \
 		fi \
 	done
 

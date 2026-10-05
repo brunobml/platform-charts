@@ -1,0 +1,22 @@
+apiVersion: kro.run/v1alpha1
+kind: TeamEKSCluster
+metadata:
+  name: {{ required "name is required" .Values.name }}-{{ required "env is required" .Values.env }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: Helm
+    platform.lab/team: {{ required "team is required" .Values.team }}
+    environment: {{ .Values.env }}
+spec:
+  team: {{ .Values.team }}
+  name: {{ .Values.name }}
+  env: {{ .Values.env }}
+  kubernetesVersion: {{ required "kubernetesVersion is required" .Values.kubernetesVersion | quote }}
+  network: {{ .Values.network | default "platform-default" }}
+  nodeGroup:
+    instanceType: {{ required "nodeGroup.instanceType is required" .Values.nodeGroup.instanceType }}
+    minSize: {{ .Values.nodeGroup.minSize | int }}
+    desiredSize: {{ .Values.nodeGroup.desiredSize | int }}
+    maxSize: {{ .Values.nodeGroup.maxSize | int }}
