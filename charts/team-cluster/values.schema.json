@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "team-cluster values (shape only; allowed values are the admission policy teamekscluster-contract)",
+  "type": "object",
+  "required": ["team", "name", "env", "kubernetesVersion", "network", "nodeGroup"],
+  "properties": {
+    "team": {"type": "string", "minLength": 2},
+    "name": {"type": "string", "minLength": 2},
+    "env": {"type": "string", "enum": ["dev", "test", "prod"]},
+    "kubernetesVersion": {"type": "string", "minLength": 1},
+    "network": {"type": "string"},
+    "nodeGroup": {
+      "type": "object",
+      "required": ["instanceType", "minSize", "desiredSize", "maxSize"],
+      "properties": {
+        "instanceType": {"type": "string", "minLength": 1},
+        "minSize": {"type": "integer"},
+        "desiredSize": {"type": "integer"},
+        "maxSize": {"type": "integer"}
+      }
+    }
+  }
+}

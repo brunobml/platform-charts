@@ -1,0 +1,10 @@
+# CI fixture: a prod claim (larger node group, default network omitted)
+team: team-data
+name: analytics
+env: prod
+kubernetesVersion: "1.34"
+nodeGroup:
+  instanceType: m5.large
+  minSize: 2
+  desiredSize: 3
+  maxSize: 5

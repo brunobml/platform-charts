@@ -1,0 +1,9 @@
+apiVersion: v2
+name: team-cluster
+description: Golden path chart for a team EKS cluster (one kro TeamEKSCluster in the platform network; tenant-iac)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Platform Engineering Team
+    email: platform-team@enterprise.local

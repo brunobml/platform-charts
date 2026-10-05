@@ -40,7 +40,12 @@ jobs:
           for chart in charts/*; do
             if [ -d "$chart" ] && [ -f "$chart/Chart.yaml" ]; then
               echo "Linting $chart..."
-              helm lint "$chart" --set image=placeholder:latest
+              # a chart's own CI fixtures if it has them (team-cluster), else the placeholder image (queue-backed-service)
+              if ls "$chart"/ci/*-values.yaml >/dev/null 2>&1; then
+                for v in "$chart"/ci/*-values.yaml; do helm lint "$chart" -f "$v"; done
+              else
+                helm lint "$chart" --set image=placeholder:latest
+              fi
             fi
           done
 
@@ -67,14 +72,22 @@ jobs:
               helm package "$chart" -d dist/
               pkg_file="dist/${chart_name}-${chart_version}.tgz"
 
-              # Does this version already exist in GHCR? Only an explicit "not found" means "new version";
-              # any other error (outage, auth, rate limit, network) fails the job instead of pushing
+              # Does this version already exist in GHCR? Checked ANONYMOUSLY (empty registry config): lab charts
+              # are public, because Argo CD pulls them without credentials. Answers:
+              #   pull ok                         -> released: content must be identical
+              #   ": not found"                   -> the package exists, this version is new
+              #   token endpoint 403 for the name -> the package does not exist yet (first release; GHCR
+              #                                      answers "denied", not "not found", for an unknown name)
+              # Any other error (outage, rate limit, network) fails the job instead of pushing
               # (validation-01 V-2: the guard must fail closed).
               tmp_remote=$(mktemp -d)
+              anon_cfg=$(mktemp)
               set +e
-              pull_err=$(helm pull "oci://ghcr.io/${OWNER}/charts/${chart_name}" --version "${chart_version}" -d "${tmp_remote}" 2>&1 >/dev/null)
+              pull_err=$(HELM_REGISTRY_CONFIG="${anon_cfg}" helm pull "oci://ghcr.io/${OWNER}/charts/${chart_name}" --version "${chart_version}" -d "${tmp_remote}" 2>&1 >/dev/null)
               pull_rc=$?
+              token_code=$(curl -s -o /dev/null -w '%{http_code}' "https://ghcr.io/token?scope=repository:${OWNER}/charts/${chart_name}:pull&service=ghcr.io")
               set -e
+              rm -f "${anon_cfg}"
               if [ "${pull_rc}" -eq 0 ]; then
                 echo "Chart ${chart_name}:${chart_version} already exists in GHCR. Verifying content immutability..."
 
@@ -96,6 +109,11 @@ jobs:
               elif echo "${pull_err}" | grep -q ": not found"; then
                 echo "Chart ${chart_name}:${chart_version} is a new version. Pushing to oci://ghcr.io/${OWNER}/charts..."
                 helm push "${pkg_file}" "oci://ghcr.io/${OWNER}/charts"
+                rm -rf "${tmp_remote}"
+              elif echo "${pull_err}" | grep -q "403: denied" && [ "${token_code}" = "403" ]; then
+                echo "Chart ${chart_name} does not exist in GHCR yet (anonymous token denied). First release of ${chart_version}: pushing..."
+                helm push "${pkg_file}" "oci://ghcr.io/${OWNER}/charts"
+                echo "::notice::New package ${OWNER}/charts/${chart_name}: make it PUBLIC in the package settings (Argo CD pulls anonymously)."
                 rm -rf "${tmp_remote}"
               else
                 echo "::error::Cannot determine whether ${chart_name}:${chart_version} exists in GHCR (helm pull rc=${pull_rc}): ${pull_err}"

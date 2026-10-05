@@ -1,0 +1,11 @@
+# CI fixture (chart-testing convention): the example claim tenant-iac/teams/team-data/clusters/analytics-dev.yaml
+team: team-data
+name: analytics
+env: dev
+kubernetesVersion: "1.33"
+network: platform-default
+nodeGroup:
+  instanceType: t3.medium
+  minSize: 1
+  desiredSize: 2
+  maxSize: 3
